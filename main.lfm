@@ -1,7 +1,7 @@
 object FormMain: TFormMain
-  Left = 515
+  Left = 294
   Height = 849
-  Top = 149
+  Top = 105
   Width = 1056
   Caption = 'Untitled'
   ClientHeight = 829
@@ -4151,6 +4151,7 @@ object FormMain: TFormMain
         A6FF474747FF515151FF515151FF515151FF515151FF515151FF515151FF5151
         51FF515151FF515151FF515151FF515151FF515151FF515151FF
       }
+      Transparent = False
       OnClick = SpeedButton1Click
     end
     object SpeedButton2: TSpeedButton

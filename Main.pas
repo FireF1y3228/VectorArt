@@ -134,6 +134,7 @@ begin
     b.Margin := 0;
     b.Left := 2;
     b.Tag := i;
+    b.transparent:=false;
     b.OnMouseDown := @ToolButtonMouseDown;
     setlength(toolbuttons, length(toolbuttons) + 1);
     ToolButtons[i] := b;
@@ -316,7 +317,7 @@ begin
   end;
   paintbox.cursor := crDefault;
   PaintBox.Invalidate;
-
+  //scaleSpinEdit.Value := GlobalScale * 100;
 end;
 
 procedure TFormMain.PaintBoxPaint(Sender: TObject);

@@ -5,7 +5,7 @@ unit CoordSystems;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, Math, Controls, Dialogs;
 
 type
   TPointDouble = record
@@ -33,6 +33,7 @@ function PointDouble(X, Y: double): TPointDouble;
 function SetScreenCoords(a: array of TPointDouble): TPointList;
 function point_distance(x1, y1, x2, y2: double): double;
 function point_in_rectangle(px, py, x1, y1, x2, y2: double): boolean;
+function point_in_line(px, py, x1, y1, x2, y2: double; w: integer): boolean;
 
 implementation
 //TRANSFORM FUNCTIONS begin
@@ -73,7 +74,7 @@ begin
   setlength(Result, 0);
   for i := 0 to length(a) - 1 do
   begin
-    setlength(Result, length(Result) + 1);//
+    setlength(Result, length(Result) + 1);
     Result[i] := Point(w2s(a[i]).x, w2s(a[i]).y);
   end;
 end;
@@ -103,6 +104,24 @@ begin
     Result := True
   else
     Result := False;
+end;
+
+function point_in_line(px, py, x1, y1, x2, y2: double; w: integer): boolean;
+var
+  dx1, dy1, dx, dy, s, ab, h: double;
+begin
+  dx1 := x2 - x1;
+  dy1 := y2 - y1;
+  dx := px - x1;
+  dy := py - y1;
+
+  S := dx1 * dy - dx * dy1;
+  ab := Sqrt(dx1 * dx1 + dy1 * dy1);
+  //showmessage(floattostr(ab));
+  h := S / ab;
+  Result := boolean(Abs(h) < w / 2 + 10) and
+    boolean(point_in_rectangle(px, py, x1, y1, x2, y2));
+
 end;
 
 //TRANSFORM FUNCTIONS end

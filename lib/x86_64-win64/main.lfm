@@ -1,10 +1,10 @@
 object FormMain: TFormMain
-  Left = 515
+  Left = 294
   Height = 849
-  Top = 149
+  Top = 105
   Width = 1056
   Caption = 'Untitled'
-  ClientHeight = 824
+  ClientHeight = 829
   ClientWidth = 1056
   Color = clWindowFrame
   Icon.Data = {
@@ -3994,10 +3994,10 @@ object FormMain: TFormMain
   Menu = MainMenu
   OnCreate = FormCreate
   OnResize = FormResize
-  LCLVersion = '1.6.4.0'
+  LCLVersion = '1.8.0.6'
   object VerScrollBar: TScrollBar
     Left = 1040
-    Height = 768
+    Height = 773
     Top = 36
     Width = 16
     Align = alRight
@@ -4009,7 +4009,7 @@ object FormMain: TFormMain
   object HorScrollBar: TScrollBar
     Left = 0
     Height = 20
-    Top = 804
+    Top = 809
     Width = 1056
     Align = alBottom
     PageSize = 0
@@ -4018,7 +4018,7 @@ object FormMain: TFormMain
   end
   object PanelOutline1: TPanel
     Left = 48
-    Height = 768
+    Height = 773
     Top = 36
     Width = 4
     Align = alLeft
@@ -4029,7 +4029,7 @@ object FormMain: TFormMain
   end
   object PaintBox: TPaintBox
     Left = 52
-    Height = 768
+    Height = 773
     Top = 36
     Width = 988
     Align = alClient
@@ -4042,7 +4042,7 @@ object FormMain: TFormMain
   end
   object PanelMain: TPanel
     Left = 0
-    Height = 768
+    Height = 773
     Top = 36
     Width = 48
     Align = alLeft
@@ -4065,16 +4065,6 @@ object FormMain: TFormMain
     ParentColor = False
     ParentFont = False
     TabOrder = 1
-    object ListBox1: TListBox
-      Left = 1016
-      Height = 28
-      Top = 8
-      Width = 131
-      BorderStyle = bsNone
-      Color = clScrollBar
-      ItemHeight = 0
-      TabOrder = 0
-    end
     object ColorButton: TColorButton
       Left = 0
       Height = 22
@@ -4161,6 +4151,8 @@ object FormMain: TFormMain
         A6FF474747FF515151FF515151FF515151FF515151FF515151FF515151FF5151
         51FF515151FF515151FF515151FF515151FF515151FF515151FF
       }
+      Transparent = False
+      OnClick = SpeedButton1Click
     end
     object SpeedButton2: TSpeedButton
       Left = 80
@@ -4301,21 +4293,6 @@ object FormMain: TFormMain
     Width = 142
     Caption = 'StaticText8'
     TabOrder = 11
-  end
-  object ComboBox1: TComboBox
-    Left = 952
-    Height = 28
-    Top = 8
-    Width = 56
-    Color = clBackground
-    ItemHeight = 20
-    Items.Strings = (
-      'azaza'
-      'azaza'
-      'azaza'
-    )
-    Style = csDropDownList
-    TabOrder = 14
   end
   object MainMenu: TMainMenu
     left = 1080

@@ -192,7 +192,7 @@ begin
     Parent := FormInstrumentPanel^;
     left := _cleft;
     Caption := aCaption;
-
+    //flat := True;
     color := clWindowFrame;
     Top := 4;
     Width := length(Caption) * 10;

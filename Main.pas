@@ -14,7 +14,6 @@ type
   { TFormMain }
 
   TFormMain = class(TForm)
-    ColorButton1: TColorButton;
     HorScrollBar: TScrollBar;
     MenuEdit: TMenuItem;
     MenuReset: TMenuItem;
@@ -22,7 +21,6 @@ type
     MenuResetOffset: TMenuItem;
     MenuScaleToFit: TMenuItem;
     SpeedButton1: TSpeedButton;
-    SpeedButton2: TSpeedButton;
     VerScrollBar: TScrollBar;
     StaticText1: TStaticText;
     StaticText2: TStaticText;
@@ -34,7 +32,6 @@ type
     StaticText8: TStaticText;
     PanelOutline2: TPanel;
     PanelOutline1: TPanel;
-    ColorButton: TColorButton;
     MainMenu: TMainMenu;
     MenuFile: TMenuItem;
     MenuHelp: TMenuItem;
@@ -89,10 +86,8 @@ var
   ttemp: TTransformTool;
   ToolButtons: array of TSpeedButton;
   SelectedTool: TTool;
-  ptptpt: tedit;
 
-const
-  FormMainParams: array [0..0] of string = ('scale');
+
 
 implementation
 
@@ -109,11 +104,10 @@ var
 begin
   FormInstrumentPanel := @panelinstrument;
   FormMainPaintBox := @PaintBox;
-  PCObj := ParameterCreator.Create;
   LastChosenButton := nil;
   GlobalOffset := PointDouble(0, 0);
   GlobalScale := 1;
-  (PCObj as ParameterCreator).CreateParameters(formmainparams);
+  CreateParameters(FormMainParams);
   for i := 0 to High(TToolClassList) do
   begin
     Transformed := False;
@@ -134,15 +128,13 @@ begin
     b.Margin := 0;
     b.Left := 2;
     b.Tag := i;
-    b.transparent:=false;
+    b.transparent := False;
     b.OnMouseDown := @ToolButtonMouseDown;
     setlength(toolbuttons, length(toolbuttons) + 1);
     ToolButtons[i] := b;
   end;
   globalwidth := 1;
   globalcolor[0] := clBlack;
-  rx := 25;
-  ry := 25;
   FigureButtonTag := 0;
   LastChosenButton := ToolButtons[0];
   ReselectButton(ToolButtons[0]);
@@ -199,7 +191,7 @@ end;
 
 procedure TFormMain.ColorButtonColorChanged(Sender: TObject);
 begin
-  globalcolor[0] := ColorButton.ButtonColor;
+  //globalcolor[0] := ColorButton.ButtonColor;
 end;
 
 procedure TFormMain.FormResize(Sender: TObject);

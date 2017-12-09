@@ -113,7 +113,7 @@ implementation
 constructor TPenTool.Create();
 begin
   GlobalMode := Draw;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TPenTool.MouseDown(x, y: integer);
@@ -130,7 +130,7 @@ end;
 constructor TLineTool.Create();
 begin
   GlobalMode := Draw;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TLineTool.MouseDown(x, y: integer);
@@ -148,7 +148,7 @@ end;
 constructor TRectangleTool.Create();
 begin
   GlobalMode := Draw;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TRectangleTool.MouseDown(x, y: integer);
@@ -165,7 +165,7 @@ end;
 constructor TEllipseTool.Create();
 begin
   GlobalMode := Draw;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TEllipseTool.MouseDown(x, y: integer);
@@ -182,7 +182,7 @@ end;
 constructor TRoundrectTool.Create();
 begin
   GlobalMode := Draw;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TRoundrectTool.MouseDown(x, y: integer);
@@ -201,7 +201,7 @@ end;
 constructor THandTool.Create();
 begin
   GlobalMode := Transform;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure THandTool.MouseDown(x, y: integer);
@@ -212,7 +212,7 @@ end;
 constructor TZoomTool.Create();
 begin
   GlobalMode := Transform;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TZoomTool.MouseDown(x, y: integer);
@@ -223,7 +223,7 @@ end;
 constructor TZoomRectangleTool.Create();
 begin
   GlobalMode := Transform;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TZoomRectangleTool.MouseDown(x, y: integer);
@@ -234,7 +234,7 @@ end;
 constructor TSelectTool.Create();
 begin
   GlobalMode := Transform;
-  (PCObj as ParameterCreator).CreateParameters(params);
+  CreateParameters(params);
 end;
 
 procedure TSelectTool.MouseDown(x, y: integer);

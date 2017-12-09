@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <Compiler Value="C:\Lazarus\fpc\3.0.4\bin\x86_64-win64\fpc.exe" Date="1266910071"/>
-  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -WG -l -vewnhibq &quot;-FiC:\Users\123\Desktop\Проекты\Lazarus\VectorArt — копия\VectorArt\lib\x86_64-win64&quot; &quot;-FuC:\Users\123\Desktop\Проекты\Lazarus\VectorArt — копия\VectorArt\New editor&quot; -FuC:\Lazarus\lcl\units\x86_64-win64\win32 -FuC:\Lazarus\lcl\units\x86_64-win64 -FuC:\Lazarus\components\lazutils\lib\x86_64-win64 -FuC:\Lazarus\packager\units\x86_64-win64 &quot;-FuC:\Users\123\Desktop\Проекты\Lazarus\VectorArt — копия\VectorArt\&quot; &quot;-FUC:\Users\123\Desktop\Проекты\Lazarus\VectorArt — копия\VectorArt\lib\x86_64-win64\&quot; -dLCL -dLCLwin32 new_editor.lpr"/>
+  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -WG -l -vewnhibq -FiC:\Users\123\Desktop\VectorArtx\lib\x86_64-win64 &quot;-FuC:\Users\123\Desktop\VectorArtx\New editor&quot; -FuC:\Lazarus\lcl\units\x86_64-win64\win32 -FuC:\Lazarus\lcl\units\x86_64-win64 -FuC:\Lazarus\components\lazutils\lib\x86_64-win64 -FuC:\Lazarus\packager\units\x86_64-win64 -FuC:\Users\123\Desktop\VectorArtx\ -FUC:\Users\123\Desktop\VectorArtx\lib\x86_64-win64\ -dLCL -dLCLwin32 new_editor.lpr"/>
 </CONFIG>

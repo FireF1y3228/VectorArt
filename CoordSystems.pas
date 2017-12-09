@@ -108,21 +108,26 @@ end;
 
 function point_in_line(px, py, x1, y1, x2, y2: double; w: integer): boolean;
 var
-  dx1, dy1, dx, dy, s, ab, h: double;
+  t, d2, d1, ap, a2, bp: double;
 begin
-  dx1 := x2 - x1;
-  dy1 := y2 - y1;
-  dx := px - x1;
-  dy := py - y1;
-
-  S := dx1 * dy - dx * dy1;
-  ab := Sqrt(dx1 * dx1 + dy1 * dy1);
-  //showmessage(floattostr(ab));
-  h := S / ab;
-  Result := boolean(Abs(h) < w / 2 + 10) and
-    boolean(point_in_rectangle(px, py, x1, y1, x2, y2));
-
+  a2 := (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1);
+  ap := min(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
+  bp := max(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
+  d1 := sqrt((a2 * a2) / ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+  t := (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
+  if (t < 0) then
+    d2 := ap
+  else
+  begin
+    t := (x2 - px) * (x2 - x1) + (y2 - py) * (y2 - y1);
+    if (t < 0) then
+      d2 := bp
+    else
+      d2 := d1;
+  end;
+  Result := boolean(d2 < w + 5);
 end;
 
+//function point_in_ellipse
 //TRANSFORM FUNCTIONS end
 end.

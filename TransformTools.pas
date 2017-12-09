@@ -203,7 +203,15 @@ begin
       'TLine':
       begin
         if (point_in_line(wx, wy, i.points[0].x, i.points[0].y,
-          i.points[1].x, i.points[1].y,i.width)) then
+          i.points[1].x, i.points[1].y, i.Width)) then
+        begin
+          i.selected := not i.selected;
+        end;
+      end;
+      'TRectangle':
+      begin
+        if (point_in_rectangle(wx, wy, i.points[0].x, i.points[0].y,
+          i.points[1].x, i.points[1].y)) then
         begin
           i.selected := not i.selected;
         end;

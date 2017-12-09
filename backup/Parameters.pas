@@ -5,103 +5,151 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Controls, Graphics, Math, StdCtrls,
-  ExtCtrls, ComCtrls, CoordSystems, Buttons;
+  ExtCtrls, ComCtrls, CoordSystems, Buttons, Dialogs;
 
 type
   DoublePointer = ^double;
   IntegerPointer = ^integer;
-  ParameterStringList = array of string;
+  ColorPointer = ^TColor;
+  ParameterStringListType = array of string;
 
-  ParameterProperties = record
-    min, max, increment, multiplier: double;
-    pointer: ^double;
+  ParameterObjectListType = array of TObject;
+
+  BaseParameter = class
+  protected
+  var
+    left: integer;
+  public
+  var
+    ObjectList: ParameterObjectListType;
   end;
 
-  ParameterPropertiesList = array of ParameterProperties;
+  BaseParameterListType = array of BaseParameter;
 
-  ParameterObjectList = array of array of TObject;
-
-  ParameterCreator = class
+  TextParameter = class(BaseParameter)
   private
-    procedure creatEeditForm(_cleft: integer; aCaption, def, aName: string);
-    function creatEeditFormAndProperties(_cleft: integer;
-      aCaption, adef, aName: string; amin, amax, aincrement, amultiplier: double;
-      apointer: DoublePointer): integer;
+  var
+    min, max, increment, multiplier: double;
+    pointer: ^double;
+
     procedure EditFormChange(Sender: TObject);
     procedure UpDownChangingEx(Sender: TObject; var AllowChange: boolean;
       NewValue: smallint; Direction: TUpDownDirection);
-    function createbutton(_cleft: integer; aCaption: string): integer;
-  var
-    ParamObjList: ParameterObjectList;
-    ParamPList: ParameterPropertiesList;
-  const
-    SCALEPARAMDEFPOS = 900;
+    procedure CreateEditForm(_cleft: integer; aCaption, def, aName: string);
   public
-    procedure CreateParameters(aParamList: ParameterStringList);
+    constructor Create(_cleft: integer; aCaption, adef, aName: string;
+      amin, amax, aincrement, amultiplier: double; apointer: DoublePointer);
   end;
 
-  PersistentParameter = class
+  ButtonParameter = class(BaseParameter)
+  private
+  public
+    constructor Create(aWidth, aHeight, aTop, aLeft: integer;
+      aFlat: boolean; aCaption, aIconPath: string);
+  end;
+
+  ColorButtonParameter = class(BaseParameter)
+  private
+  var
+    ButtonColor: TColor;
+    pointer: ^TColor;
+
+    procedure OnChangedColor(Sender: TObject);
+
+  public
+    constructor Create(aBorderWidth, aWidth, aHeight, aTop, aLeft: integer;
+      aButtonColor: TColor; apointer: ColorPointer; atransparent: boolean);
 
   end;
+
+//function createbutton(_cleft: integer; aCaption: string): integer;
+procedure CreateParameters(aParamList: ParameterStringListType);
+
+const
+  SCALEPARAMDEFPOS = 900;
+  DEFAULTLEFT = 150;
+  FormMainParams: array [0..4] of string =
+    ('color2', 'color1', 'swapcolors', 'nocolor', 'scale');
+  DEFAULTPARAMETERSCOUNT = sizeof(formmainparams);
 
 var
+  BaseParameterList: BaseParameterListType;
   FormInstrumentPanel: ^TPanel;
   FormMainPaintBox: ^TPaintBox;
-  PCObj: ParameterCreator;
   GlobalColor: array[0..1] of TColor;
   GlobalWidth, GlobalRadX, GlobalRadY: double;
 
 implementation
 
-procedure ParameterCreator.CreateParameters(aParamList: ParameterStringList);
+procedure CreateParameters(aParamList: ParameterStringListType);
 var
   s: string;
-  cleft, i, j: integer;
+  cleft, j, h, i: integer;
 begin
-  for i := 1 to high(ParamObjList) do
-    for j := 0 to high(ParamObjList[high(ParamObjList)]) do
-      FreeAndNil(ParamObjList[i, j]);
-  if (length(paramobjlist) <> 0) then
+  if (length(BaseParameterList) <> 0) then
   begin
-    setlength(ParamObjList, 1);
-    setlength(ParamPlist, 1);
+    for i := DEFAULTPARAMETERSCOUNT to high(BaseParameterList) do
+    begin
+      for j := 0 to high(BaseParameterList[i].ObjectList) do
+        FreeAndNil(BaseParameterList[i].ObjectList[j]);
+      FreeAndNil(BaseParameterList[i]);
+    end;
+    SetLength(BaseParameterList, DEFAULTPARAMETERSCOUNT);
   end;
-  Cleft := 150;
   for s in aParamList do
   begin
+    if (length(BaseParameterList) > DEFAULTPARAMETERSCOUNT) then
+      cleft := BaseParameterList[high(BaseParameterList)].left
+    else
+      cleft := DEFAULTLEFT;
+    setlength(BaseParameterList, length(BaseParameterList) + 1);
+    h := high(BaseParameterList);
     case s of
       'width':
-        cleft := creatEeditFormAndProperties(cleft, 'Width: ',
-          floattostr(globalwidth), 'Width', 1, 512, 1, 1, @GlobalWidth);
+        BaseParameterList[h] :=
+          TextParameter.Create(cleft, 'Width: ', floattostr(globalwidth),
+          'Width', 1, 512, 1, 1, @GlobalWidth);
       'radiusx':
-        cleft := creatEeditFormAndProperties(cleft, 'Radius X: ',
-          floattostr(GlobalRadX), 'RadX', 1, 512, 1, 1, @GlobalRadX);
+        BaseParameterList[h] :=
+          TextParameter.Create(cleft, 'Radius X: ', floattostr(GlobalRadX),
+          'RadX', 1, 512, 1, 1, @GlobalRadX);
       'radiusy':
-        cleft := creatEeditFormAndProperties(cleft, 'Radius Y: ',
-          floattostr(GlobalRadY), 'RadY', 1, 512, 1, 1, @GlobalRadY);
+        BaseParameterList[h] :=
+          TextParameter.Create(cleft, 'Radius Y: ', floattostr(GlobalRadY),
+          'RadY', 1, 512, 1, 1, @GlobalRadY);
       'scale':
-        creatEeditFormAndProperties(SCALEPARAMDEFPOS,
-          'Scale: ', floattostr(GlobalScale * 100), 'CanvasScl', 1, 3200,
-          0.1, 0.01, @GlobalScale);
-      'color':
-      begin
-
-      end;
-      'delete':
-        cleft:=CreateButton(cleft, 'Delete');
+        BaseParameterList[h] :=
+          TextParameter.Create(SCALEPARAMDEFPOS, 'Scale: ',
+          floattostr(GlobalScale * 100), 'CanvasScl', 1, 3200, 0.1, 0.01, @GlobalScale);
+      'color2':
+        BaseParameterList[h] :=
+          ColorButtonParameter.Create(1, 40, 22, 4, 0, ClWhite, @globalcolor[1], False);
+      'color1':
+        BaseParameterList[h] :=
+          ColorButtonParameter.Create(1, 39, 33, 0, 17, ClBlack, @globalcolor[0], False);
+      'swapcolors':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(20, 20, 7, 57, True, '-', 'swapcolors');
+      'nocolor':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(20, 20, 7, 80, True, '-', 'nocolor');
+        //'delete':
+        //cleft := CreateButton(cleft, 'Delete');
+      else
+        setlength(BaseParameterList, length(BaseParameterList) - 1);
     end;
   end;
 end;
 
-procedure ParameterCreator.CreateEditForm(_cleft: integer; aCaption, def, aName: string);
+procedure TextParameter.CreateEditForm(_cleft: integer; aCaption, def, aName: string);
 var
   h: integer;
 begin
-  setlength(ParamObjList, length(ParamObjList) + 1);
-  h := high(ParamObjList);
-  setlength(ParamObjList[h], length(ParamObjList[h]) + 1);
-  paramobjlist[h, high(paramobjlist[h])] := TEdit.Create(nil);
-  with (paramobjlist[h, high(ParamObjList[h])] as TEdit) do
+  left := _cleft;
+  setlength(ObjectList, length(ObjectList) + 1);
+  h := high(ObjectList);
+  ObjectList[high(ObjectList)] := TEdit.Create(nil);
+  with (ObjectList[high(ObjectList)] as TEdit) do
   begin
     BorderStyle := BsNone;
     Parent := FormInstrumentPanel^;
@@ -128,14 +176,14 @@ begin
     OnChange := @EditFormChange;
   end;
 
-  setlength(ParamObjList[h], length(ParamObjList[h]) + 1);
-  paramobjlist[h, high(paramobjlist[h])] := TUpDown.Create(nil);
-  with (paramobjlist[h, high(ParamObjList[h])] as TUpDown) do
+  setlength(ObjectList, length(ObjectList) + 1);
+  ObjectList[high(ObjectList)] := TUpDown.Create(nil);
+  with (ObjectList[high(ObjectList)] as TUpDown) do
   begin
     Parent := FormInstrumentPanel^;
     Tag := h;
     Top := 7;
-    (paramobjlist[h, 0] as TEdit).Text := Def;
+    (objectlist[0] as TEdit).Text := Def;
     Left := _cleft + 32;
     Height := 18;
     Font.CharSet := 204;
@@ -146,9 +194,9 @@ begin
     OnChangingEx := @UpDownChangingEx;
   end;
 
-  setlength(ParamObjList[h], length(ParamObjList[h]) + 1);
-  paramobjlist[h, high(paramobjlist[h])] := TBevel.Create(nil);
-  with (paramobjlist[h, high(ParamObjList[h])] as TBevel) do
+  setlength(ObjectList, length(ObjectList) + 1);
+  ObjectList[high(ObjectList)] := TBevel.Create(nil);
+  with (ObjectList[high(ObjectList)] as TBevel) do
   begin
     Parent := FormInstrumentPanel^;
     Tag := h;
@@ -159,9 +207,9 @@ begin
     Top := 26;
   end;
 
-  setlength(ParamObjList[h], length(ParamObjList[h]) + 1);
-  paramobjlist[h, high(paramobjlist[h])] := TLabel.Create(nil);
-  with (paramobjlist[h, high(ParamObjList[h])] as TLabel) do
+  setlength(ObjectList, length(ObjectList) + 1);
+  ObjectList[high(ObjectList)] := TLabel.Create(nil);
+  with (ObjectList[high(ObjectList)] as TLabel) do
   begin
     Parent := FormInstrumentPanel^;
     Tag := h;
@@ -177,9 +225,10 @@ begin
     Height := 16;
     Left := _cleft - 5 * length(aCaption);
   end;
+  left += 128;
 end;
 
-function ParameterCreator.CreateButton(_cleft: integer; aCaption: string): integer;
+{function ParameterCreator.CreateButton(_cleft: integer; aCaption: string): integer;
 var
   h: integer;
 begin
@@ -199,9 +248,9 @@ begin
     Height := 26;
   end;
   Result := _cleft + (paramobjlist[h, high(ParamObjList[h])] as TSpeedButton).Width;
-end;
+end; }
 
-procedure ParameterCreator.EditFormChange(Sender: TObject);
+procedure TextParameter.EditFormChange(Sender: TObject);
 var
   txt: string;
   i, t: integer;
@@ -218,18 +267,18 @@ begin
     end;
   end;
   if ((txt = '') or (txt = '0')) then
-    txt := floattostr(ParamPlist[t].min);
-  if (StrTofloat(txt) > ParamPlist[t].max) then
-    txt := floattostr(ParamPlist[t].max);
-  if (StrTofloat(txt) < ParamPlist[t].min) then
-    txt := floattostr(ParamPlist[t].min);
+    txt := floattostr(min);
+  if (StrTofloat(txt) > max) then
+    txt := floattostr(max);
+  if (StrTofloat(txt) < min) then
+    txt := floattostr(min);
   _e.Text := txt;
-  ParamPlist[t].pointer^ := StrTofloat(txt) * ParamPlist[t].multiplier;
+  pointer^ := StrTofloat(txt) * multiplier;
   FormMainPaintBox^.invalidate;
 end;
 
-procedure ParameterCreator.UpDownChangingEx(Sender: TObject;
-  var AllowChange: boolean; NewValue: smallint; Direction: TUpDownDirection);
+procedure TextParameter.UpDownChangingEx(Sender: TObject; var AllowChange: boolean;
+  NewValue: smallint; Direction: TUpDownDirection);
 var
   _u: TUpDown;
   t: integer;
@@ -238,33 +287,80 @@ var
   s: string;
 begin
   _u := Sender as TUpDown;
-  _e := ParamObjList[_u.tag, 0] as TEdit;
+  _e := ObjectList[0] as TEdit;
   t := _e.tag;
   val := strtofloat(_e.Text);
   case Direction of
-    UpdUp: val += ParamPlist[t].increment;
-    UpdDown: val -= ParamPlist[t].increment;
+    UpdUp: val += increment;
+    UpdDown: val -= increment;
   end;
   s := floattostr(val);
   _e.Text := floattostr(val);
   FormMainPaintBox^.invalidate;
 end;
 
-function ParameterCreator.CreatEeditFormAndProperties(_cleft: integer;
-  aCaption, adef, aName: string; amin, amax, aincrement, amultiplier: double;
-  apointer: DoublePointer): integer;
+constructor TextParameter.Create(_cleft: integer; aCaption, adef, aName: string;
+  amin, amax, aincrement, amultiplier: double; apointer: DoublePointer);
 begin
-  setlength(ParamPlist, Length(ParamPlist) + 1);
-  with (ParamPlist[High(ParamPlist)]) do
-  begin
-    min := amin;
-    max := amax;
-    increment := aincrement;
-    pointer := apointer;
-    multiplier := amultiplier;
-  end;
+  min := amin;
+  max := amax;
+  increment := aincrement;
+  pointer := apointer;
+  multiplier := amultiplier;
   CreateEditForm(_cleft, aCaption, aDef, aName);
-  Result := _cleft +128;
+end;
+
+constructor ColorButtonParameter.Create(aBorderWidth, aWidth, aHeight,
+  aTop, aLeft: integer; aButtonColor: TColor; apointer: ColorPointer;
+  atransparent: boolean);
+begin
+  setlength(ObjectList, Length(ObjectList) + 1);
+  ObjectList[high(ObjectList)] := TColorButton.Create(nil);
+  with (ObjectList[high(ObjectList)] as TColorButton) do
+  begin
+    BorderWidth := aBorderWidth;
+    Width := aWidth;
+    Height := aHeight;
+    Top := aTop;
+    flat := True;
+    Left := aLeft;
+    ButtonColor := aButtonColor;
+    Parent := FormInstrumentPanel^;
+    Transparent := atransparent;
+    OnColorChanged := @OnChangedColor;
+  end;
+  Left := aLeft;
+  Pointer := aPointer;
+end;
+
+constructor ButtonParameter.Create(aWidth, aHeight, aTop, aLeft: integer;
+  aFlat: boolean; aCaption, aIconPath: string);
+var
+  Picture: TPicture;
+begin
+  setlength(ObjectList, Length(ObjectList) + 1);
+  ObjectList[high(ObjectList)] := TSpeedButton.Create(nil);
+  with (ObjectList[high(ObjectList)] as TSpeedButton) do
+  begin
+    Width := aWidth;
+    Height := aHeight;
+    Top := aTop;
+    Left := aLeft;
+    if (acaption = '-') then
+      ShowCaption := False
+    else
+      Caption := aCaption;
+    Parent := FormInstrumentPanel^;
+  end;
+  Picture := TPicture.Create;
+  Picture.LoadFromFile(getcurrentdir + '\Images\' + aIconPath + '.png');
+  (ObjectList[high(ObjectList)] as TSpeedButton).Glyph := Picture.Bitmap;
+  Left := aLeft;
+end;
+
+procedure ColorButtonParameter.OnChangedColor(Sender: TObject);
+begin
+  pointer^ := (Sender as TColorButton).ButtonColor;
 end;
 
 end.

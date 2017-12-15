@@ -12,21 +12,27 @@ type
   TPointDoubleList = array of TPointDouble;
 
   TFigure = class
-  protected
-    procedure DrawOutlineRectangle(apoints: TPointDoubleList; acanvas: TCanvas);
-    procedure DrawPoints(apoints: TPointDoubleList; acanvas: TCanvas);
+  private
+    procedure NewPoints(apoints: TPointDoubleList; asPoints: TBooleanList;
+      acount: integer);
   public
   var
     color: TColor;
     Width: integer;
     points: TPointDoubleList;
+    sPoints: TBooleanList;
     selected: boolean;
+    sPointList: TIntList;
 
+    procedure DrawOutlineRectangle(apoints: TPointDoubleList; acanvas: TCanvas);
+    procedure DrawPoints(apoints: TPointDoubleList; acanvas: TCanvas);
     procedure Draw(acanvas: TCanvas); virtual; abstract;
     procedure MouseMove(x, y: integer); virtual; abstract;
     procedure MouseUp(x, y: integer); virtual;
     constructor Create(x, y: integer); virtual;
   end;
+
+  TFigureList = array of TFigure;
 
   TPen = class(TFigure)
   public
@@ -72,8 +78,8 @@ implementation
 
 constructor TFigure.Create(x, y: integer);
 begin
+  newpoints(Points, sPoints, 2);
   selected := False;
-  setlength(points, 2);
   points[0] := s2w(x, y);
   points[1] := points[0];
   ScreenCoord.x := x;
@@ -106,16 +112,11 @@ begin
   acanvas.pen.color := color;
   acanvas.pen.Width := Width;
   acanvas.Polyline(SetScreenCoords(Points));
-  if (selected) then
-  begin
-    DrawOutlineRectangle(points, acanvas);
-    DrawPoints(points, acanvas);
-  end;
 end;
 
 procedure TPen.MouseMove(x, y: integer);
 begin
-  setlength(points, length(points) + 1);
+  newpoints(Points, sPoints, 1);
   points[high(points)] := S2W(x, y);
 end;
 //PEN
@@ -124,11 +125,6 @@ end;
 procedure TLine.Draw(acanvas: TCanvas);
 begin
   acanvas.line(w2s(points[0]), w2s(points[1]));
-  if (selected) then
-  begin
-    DrawOutlineRectangle(points, acanvas);
-    DrawPoints(points, acanvas);
-  end;
 end;
 
 procedure TLine.MouseMove(x, y: integer);
@@ -143,11 +139,6 @@ begin
   //SetScreenCoords(points);
   acanvas.rectangle(
     w2s(points[0]).x, w2s(points[0]).y, w2s(points[1]).x, w2s(points[1]).y);
-  if (selected) then
-  begin
-    DrawOutlineRectangle(points, acanvas);
-    DrawPoints(points, acanvas);
-  end;
 end;
 
 procedure TRectangle.MouseMove(x, y: integer);
@@ -162,11 +153,6 @@ begin
   SetScreenCoords(points);
   acanvas.ellipse(w2s(points[0]).x, w2s(points[0]).y, w2s(points[1]).x,
     w2s(points[1]).y);
-  if (selected) then
-  begin
-    DrawOutlineRectangle(points, acanvas);
-    DrawPoints(points, acanvas);
-  end;
 end;
 
 procedure TEllipse.MouseMove(x, y: integer);
@@ -180,8 +166,6 @@ procedure TRoundrect.Draw(acanvas: TCanvas);
 begin
   acanvas.roundrect(w2s(points[0]).x, w2s(points[0]).y, w2s(points[1]).x,
     w2s(points[1]).y, rx, ry);
-  if (selected) then
-    DrawOutlineRectangle(points, acanvas);
 end;
 
 procedure TRoundrect.MouseMove(x, y: integer);
@@ -237,16 +221,32 @@ end;
 procedure TFigure.DrawPoints(apoints: TPointDoubleList; acanvas: TCanvas);
 var
   i: TPointDouble;
-  px, py: integer;
+  px, py, j, l: integer;
+  pSelected: boolean;
 begin
+  j := -1;
   for i in aPoints do
   begin
-    px:=w2s(i.x,0).x;
-    py:=w2s(0,i.y).y;
-    aCanvas.Pen.Color:=ClRed;
-    aCanvas.ellipse(px + round(15 * cos(135)), py + round(15 * sin(135)),
-      px + round(15 * cos(315)), py + round(15 * sin(315)));
+    pSelected := False;
+    Inc(j);
+    aCanvas.Pen.Color := ClWhite;
+    aCanvas.Brush.Color := Color;
+    px := w2s(i.x, 0).x;
+    py := w2s(0, i.y).y;
+    if (not spoints[j]) then
+      aCanvas.ellipse(px - 10, py - 10,
+        px + 10, py + 10)
+    else
+      aCanvas.rectangle(px - 10, py - 10,
+        px + 10, py + 10);
   end;
+end;
+
+procedure TFigure.NewPoints(apoints: TPointDoubleList; asPoints: TBooleanList;
+  acount: integer);
+begin
+  setlength(points, length(points) + acount);
+  setlength(sPoints, length(sPoints) + acount);
 end;
 
 end.

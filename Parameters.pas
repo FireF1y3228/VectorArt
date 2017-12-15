@@ -13,8 +13,6 @@ type
   ColorPointer = ^TColor;
   ParameterStringListType = array of string;
 
-  ParameterObjectListType = array of TObject;
-
   BaseParameter = class
   protected
   var
@@ -39,13 +37,10 @@ type
   public
     constructor Create(_cleft: integer; aCaption, adef, aName: string;
       amin, amax, aincrement, amultiplier: double; apointer: DoublePointer);
+    function GetText: string;
+    procedure SetText(atext: string);
   end;
 
-  ButtonParameter = class(BaseParameter)
-  public
-    constructor Create(aWidth, aHeight, aTop, aLeft: integer;
-      aFlat: boolean; aCaption, aIconPath: string);
-  end;
 
   ColorButtonParameter = class(BaseParameter)
   private
@@ -58,18 +53,28 @@ type
   public
     constructor Create(aBorderWidth, aWidth, aHeight, aTop, aLeft: integer;
       aButtonColor: TColor; apointer: ColorPointer; atransparent: boolean);
-
   end;
 
-//function createbutton(_cleft: integer; aCaption: string): integer;
+  ButtonParameter = class(BaseParameter)
+  private
+    procedure SpeedButtonClick1(Sender: TObject);
+    procedure SpeedButtonClick2(Sender: TObject);
+  public
+    constructor Create(aWidth, aHeight, aTop, aLeft: integer;
+      aFlat: boolean; aCaption, aIconPath: string; aOnClick: integer);
+  end;
+
 procedure CreateParameters(aParamList: ParameterStringListType);
+procedure UpdateScale;
 
 const
-  SCALEPARAMDEFPOS = 900;
+  SCALEPARAMDEFPOS = 1000;
   DEFAULTLEFT = 150;
   FormMainParams: array [0..4] of string =
     ('color2', 'color1', 'swapcolors', 'nocolor', 'scale');
   DEFAULTPARAMETERSCOUNT = sizeof(formmainparams);
+  DEFAULTCOLOR0 = ClBlack;
+  DEFAULTCOLOR1 = ClWhite;
 
 var
   BaseParameterList: BaseParameterListType;
@@ -77,6 +82,7 @@ var
   FormMainPaintBox: ^TPaintBox;
   GlobalColor: array[0..1] of TColor;
   GlobalWidth, GlobalRadX, GlobalRadY: double;
+  CtrlButtonPressed, ShiftButtonPressed: boolean;
 
 implementation
 
@@ -128,10 +134,13 @@ begin
           ColorButtonParameter.Create(1, 39, 33, 0, 17, ClBlack, @globalcolor[0], False);
       'swapcolors':
         BaseParameterList[h] :=
-          ButtonParameter.Create(20, 20, 7, 57, True, '-', 'swapcolors');
+          ButtonParameter.Create(20, 20, 7, 57, True, '-', 'swapcolors', 0);
       'nocolor':
         BaseParameterList[h] :=
-          ButtonParameter.Create(20, 20, 7, 80, True, '-', 'nocolor');
+          ButtonParameter.Create(20, 20, 7, 80, True, '-', 'nocolor', 1);
+      'zup':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(20, 20, 7, 80, True, '-', 'nocolor', 1);
         //'delete':
         //cleft := CreateButton(cleft, 'Delete');
       else
@@ -227,33 +236,12 @@ begin
   left += 128;
 end;
 
-{function ParameterCreator.CreateButton(_cleft: integer; aCaption: string): integer;
-var
-  h: integer;
-begin
-  setlength(ParamObjList, length(ParamObjList) + 1);
-  h := high(ParamObjList);
-  setlength(ParamObjList[h], length(ParamObjList[h]) + 1);
-  paramobjlist[h, high(paramobjlist[h])] := TSpeedButton.Create(nil);
-  with (paramobjlist[h, high(ParamObjList[h])] as TSpeedButton) do
-  begin
-    Parent := FormInstrumentPanel^;
-    left := _cleft;
-    Caption := aCaption;
-    //flat := True;
-    color := clWindowFrame;
-    Top := 4;
-    Width := length(Caption) * 10;
-    Height := 26;
-  end;
-  Result := _cleft + (paramobjlist[h, high(ParamObjList[h])] as TSpeedButton).Width;
-end; }
-
 procedure TextParameter.EditFormChange(Sender: TObject);
 var
   txt: string;
   i, t: integer;
   _e: TEdit;
+  tdouble: double;
 begin
   _e := (Sender as TEdit);
   t := _e.Tag;
@@ -271,7 +259,9 @@ begin
     txt := floattostr(max);
   if (StrTofloat(txt) < min) then
     txt := floattostr(min);
-  _e.Text := txt;
+  tdouble := strtofloat(txt);
+  tdouble := trunc(frac(tdouble) * 100) / 100 + trunc(tdouble);
+  _e.Text := floattostr(tdouble);
   pointer^ := StrTofloat(txt) * multiplier;
   FormMainPaintBox^.invalidate;
 end;
@@ -325,15 +315,16 @@ begin
     Left := aLeft;
     ButtonColor := aButtonColor;
     Parent := FormInstrumentPanel^;
-    Transparent := atransparent;
+    Transparent := aTransparent;
     OnColorChanged := @OnChangedColor;
   end;
+
   Left := aLeft;
   Pointer := aPointer;
 end;
 
 constructor ButtonParameter.Create(aWidth, aHeight, aTop, aLeft: integer;
-  aFlat: boolean; aCaption, aIconPath: string);
+  aFlat: boolean; aCaption, aIconPath: string; aOnClick: integer);
 var
   Picture: TPicture;
 begin
@@ -350,6 +341,10 @@ begin
     else
       Caption := aCaption;
     Parent := FormInstrumentPanel^;
+    case aOnClick of
+      0: OnClick := @SpeedButtonClick1;
+      1: OnClick := @SpeedButtonClick2;
+    end;
   end;
   Picture := TPicture.Create;
   Picture.LoadFromFile(getcurrentdir + '\Images\' + aIconPath + '.png');
@@ -360,6 +355,40 @@ end;
 procedure ColorButtonParameter.OnChangedColor(Sender: TObject);
 begin
   pointer^ := (Sender as TColorButton).ButtonColor;
+end;
+
+procedure ButtonParameter.SpeedButtonClick1(Sender: TObject);
+var
+  tempcolor: TColor;
+  _o1, _o2: TObject;
+begin
+  tempcolor := globalcolor[0];
+  globalcolor[0] := globalcolor[1];
+  globalcolor[1] := tempcolor;
+  _o1 := (baseparameterlist[0] as ColorButtonParameter).ObjectList[0];
+  _o2 := (baseparameterlist[1] as ColorButtonParameter).ObjectList[0];
+  (_o1 as TColorButton).ButtonColor := globalcolor[1];
+  (_o2 as TColorButton).ButtonColor := globalcolor[0];
+end;
+
+procedure UpdateScale;
+begin
+  (BaseParameterList[4] as TextParameter).SetText(floattostr(GlobalScale * 100));
+end;
+
+function TextParameter.GetText: string;
+begin
+  Result := (ObjectList[0] as TEdit).Text;
+end;
+
+procedure TextParameter.SetText(atext: string);
+begin
+  (ObjectList[0] as TEdit).Text := atext;
+end;
+
+procedure ButtonParameter.SpeedButtonClick2(Sender: TObject);
+begin
+  globalcolor[0] := clNone;
 end;
 
 end.

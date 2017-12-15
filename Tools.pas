@@ -9,7 +9,7 @@ uses
   Figures, TransformTools;
 
 type
-  GlobalModeType = (draw, transform);
+  GlobalModeType = (draw, transform, movepoint);
 
   TTool = class
     procedure MouseDown(x, y: integer); virtual; abstract;
@@ -91,7 +91,7 @@ type
   TSelectTool = class(TTool)
   private
   const
-    params: array [0..0] of string = ('delete');
+    params: array [0..2] of string = ('zup', 'zdown', 'delete');
   public
     constructor Create; override;
     procedure MouseDown(x, y: integer); override;
@@ -100,7 +100,6 @@ type
   TToolClass = class of TTool;
 
 var
-
   globalmode: globalmodetype;
 
 const

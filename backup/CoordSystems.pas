@@ -13,6 +13,9 @@ type
   end;
 
   TPointList = array of TPoint;
+  ParameterObjectListType = array of TObject;
+  TBooleanList = array of boolean;
+  TIntList = array of integer;
 
 var
   GlobalScale: double;
@@ -34,6 +37,11 @@ function SetScreenCoords(a: array of TPointDouble): TPointList;
 function point_distance(x1, y1, x2, y2: double): double;
 function point_in_rectangle(px, py, x1, y1, x2, y2: double): boolean;
 function point_in_line(px, py, x1, y1, x2, y2: double; w: integer): boolean;
+function ArrayElementDeleteIndex(a: ParameterObjectListType;
+  ind: integer): ParameterObjectListType;
+function ArrayElementDeleteIndex(a: TBooleanList; ind: integer): TBooleanList;
+function ArrayElementDelete(a: TIntList; e: integer): TIntList;
+
 
 implementation
 //TRANSFORM FUNCTIONS begin
@@ -113,7 +121,7 @@ begin
   a2 := (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1);
   ap := min(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
   bp := max(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
-  d1 := sqrt((a2 * a2) / ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+  d1 := sqrt(abs((a2 * a2) / ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))));
   t := (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
   if (t < 0) then
     d2 := ap
@@ -123,10 +131,58 @@ begin
     if (t < 0) then
       d2 := bp
     else
+    if (t = 0) then
+      d2 := point_distance(px, py, x1, y1)
+    else
       d2 := d1;
   end;
   Result := boolean(d2 < w + 5);
 end;
 
+//function point_in_ellipse
 //TRANSFORM FUNCTIONS end
+
+//ARRAY FUNCTIONS begin
+function ArrayElementDeleteIndex(a: ParameterObjectListType;
+  ind: integer): ParameterObjectListType;
+var
+  _i: integer;
+begin
+  for _i := ind to (high(a) - 1) do
+  begin
+    a[_i] := a[_i + 1];
+  end;
+  setlength(a, length(a) - 1);
+  Result := a;
+end;
+
+function ArrayElementDeleteIndex(a: TBooleanList; ind: integer): TBooleanList;
+var
+  _i: integer;
+begin
+  for _i := ind to (high(a) - 1) do
+  begin
+    a[_i] := a[_i + 1];
+  end;
+  setlength(a, length(a) - 1);
+  Result := a;
+end;
+
+function ArrayElementDelete(a: TIntList; e: integer): TIntList;
+var
+  _i: integer;
+  found: boolean;
+begin
+  for _i := 0 to (high(a) - 1) do
+  begin
+    if (a[_i] = e) then
+      found := True;
+    if (found) then
+      a[_i] := a[_i + 1];
+  end;
+  setlength(a, length(a) - 1);
+  Result := a;
+end;
+
+//ARRAY FUNCTIONS end
 end.

@@ -7,13 +7,14 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Buttons,
   ExtCtrls, Spin, StdCtrls, EditBtn, ComCtrls, Menus, maskedit, ActnList,
-  Figures, Math, Types, CoordSystems, Tools, TransformTools, Parameters;
+  Figures, Math, Types, CoordSystems, Tools, TransformTools, Parameters, LCLType;
 
 type
 
   { TFormMain }
 
   TFormMain = class(TForm)
+    Button1: TButton;
     HorScrollBar: TScrollBar;
     MenuEdit: TMenuItem;
     MenuReset: TMenuItem;
@@ -42,6 +43,8 @@ type
     PaintBox: TPaintBox;
     PanelMain: TPanel;
     procedure ColorButtonColorChanged(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+    procedure FormKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure FormResize(Sender: TObject);
     procedure HandPopupDefPosClick(Sender: TObject);
     procedure HorScrollBarChange(Sender: TObject);
@@ -86,8 +89,6 @@ var
   ToolButtons: array of TSpeedButton;
   SelectedTool: TTool;
 
-
-
 implementation
 
 {$R *.lfm}
@@ -107,6 +108,8 @@ begin
   GlobalOffset := PointDouble(0, 0);
   GlobalScale := 1;
   CreateParameters(FormMainParams);
+  globalcolor[0] := DEFAULTCOLOR0;
+  globalcolor[1] := DEFAULTCOLOR1;
   for i := 0 to High(TToolClassList) do
   begin
     Transformed := False;
@@ -191,6 +194,23 @@ end;
 procedure TFormMain.ColorButtonColorChanged(Sender: TObject);
 begin
   //globalcolor[0] := ColorButton.ButtonColor;
+end;
+
+procedure TFormMain.FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+begin
+  case key of
+    vk_shift: ShiftButtonPressed := True;
+    vk_control: CtrlButtonPressed := True;
+  end;
+end;
+
+procedure TFormMain.FormKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
+
+begin
+  case key of
+    vk_shift: ShiftButtonPressed := False;
+    vk_control: CtrlButtonPressed := False;
+  end;
 end;
 
 procedure TFormMain.FormResize(Sender: TObject);
@@ -287,7 +307,7 @@ begin
   StaticText5.Caption := 'offy: ' + floattostr(GlobalOffset.y);
   StaticText6.Caption := 'mdis: ' + floattostr(mindistance);
   StaticText7.Caption := 'fllength: ' + IntToStr(length(figurelist));
-  StaticText8.Caption := 'tag: ' + IntToStr(FigureButtonTag);
+  StaticText8.Caption := 'tag: ' + booltostr(ShiftButtonPressed);
   //scaleSpinEdit.Value := GlobalScale * 100;
 end;
 
@@ -314,16 +334,28 @@ end;
 procedure TFormMain.PaintBoxPaint(Sender: TObject);
 var
   i: TFigure;
+  buffer: array of TFigure;
 begin
   PaintBox.Canvas.Pen.Color := clWhite;
   PaintBox.Canvas.Brush.Color := clWhite;
   PaintBox.Canvas.Rectangle(0, 0, PaintBox.Width, PaintBox.Height);
   for i in FigureList do
   begin
+    if (i.selected) then
+    begin
+      setlength(buffer, length(buffer) + 1);
+      buffer[high(buffer)] := i;
+    end;
+
     PaintBox.Canvas.Pen.Color := i.color;
     PaintBox.Canvas.Brush.Color := i.color;
     PaintBox.Canvas.Pen.Width := max(1, round(i.Width * GlobalScale));
     i.Draw(PaintBox.Canvas);
+  end;
+  for i in buffer do
+  begin
+    i.DrawOutlineRectangle(i.points, PaintBox.Canvas);
+    i.DrawPoints(i.points, PaintBox.Canvas);
   end;
   if (GlobalMode = transform) and (drawing) then
     CurrentTTool.Draw(Paintbox.Canvas);

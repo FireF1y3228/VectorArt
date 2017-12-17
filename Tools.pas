@@ -5,18 +5,20 @@ unit Tools;
 interface
 
 uses
-  Classes, SysUtils, Graphics, Dialogs, Math, CoordSystems, Parameters,
+  Classes, SysUtils, Graphics, Controls, Dialogs, Math, CoordSystems, Parameters,
   Figures, TransformTools;
 
 type
-  GlobalModeType = (draw, transform, movepoint);
 
   TTool = class
+  var
+    Cursor: TCursor;
+  public
     procedure MouseDown(x, y: integer); virtual; abstract;
     constructor Create; virtual; abstract;
   end;
 
-  TPenTool = class(TTool)
+  TPencilTool = class(TTool)
   private
   const
     params: array [0..0] of string = ('width');
@@ -99,54 +101,52 @@ type
 
   TToolClass = class of TTool;
 
-var
-  globalmode: globalmodetype;
-
 const
   TToolClassList: array [0..8] of TToolClass =
-    (TPenTool, TLineTool, TRectangleTool, TEllipseTool, TRoundrectTool,
+    (TPencilTool, TLineTool, TRectangleTool, TEllipseTool, TRoundrectTool,
     THandTool, TZoomTool, TZoomRectangleTool, TSelectTool);
 
 implementation
 
-constructor TPenTool.Create();
+constructor TPencilTool.Create();
 begin
-  GlobalMode := Draw;
+  Cursor := crCross;
   CreateParameters(params);
 end;
 
-procedure TPenTool.MouseDown(x, y: integer);
+procedure TPencilTool.MouseDown(x, y: integer);
 begin
   setlength(FigureList, length(FigureList) + 1);
-  FigureList[High(FigureList)] := TPen.Create(x, y);
+  FigureList[High(FigureList)] := TPencil.Create(x, y);
   with FigureList[High(FigureList)] do
   begin
-    Color := GlobalColor[0];
+    FillColor := GlobalColor[0];
     Width := round(GlobalWidth);
+    Params := self.Params;
   end;
 end;
 
 constructor TLineTool.Create();
 begin
-  GlobalMode := Draw;
+  Cursor := crCross;
   CreateParameters(params);
 end;
 
 procedure TLineTool.MouseDown(x, y: integer);
 begin
-
   setlength(FigureList, length(FigureList) + 1);
   FigureList[High(FigureList)] := TLine.Create(x, y);
   with FigureList[High(FigureList)] do
   begin
-    Color := GlobalColor[0];
+    FillColor := GlobalColor[0];
     Width := round(GlobalWidth);
+    Params := self.Params;
   end;
 end;
 
 constructor TRectangleTool.Create();
 begin
-  GlobalMode := Draw;
+  Cursor := crCross;
   CreateParameters(params);
 end;
 
@@ -156,14 +156,15 @@ begin
   FigureList[High(FigureList)] := TRectangle.Create(x, y);
   with FigureList[High(FigureList)] do
   begin
-    Color := GlobalColor[0];
+    FillColor := GlobalColor[0];
     Width := round(GlobalWidth);
+    Params := self.Params;
   end;
 end;
 
 constructor TEllipseTool.Create();
 begin
-  GlobalMode := Draw;
+  Cursor := crCross;
   CreateParameters(params);
 end;
 
@@ -173,14 +174,15 @@ begin
   FigureList[High(FigureList)] := TEllipse.Create(x, y);
   with FigureList[High(FigureList)] do
   begin
-    Color := GlobalColor[0];
+    FillColor := GlobalColor[0];
     Width := round(GlobalWidth);
+    Params := self.Params;
   end;
 end;
 
 constructor TRoundrectTool.Create();
 begin
-  GlobalMode := Draw;
+  Cursor := crCross;
   CreateParameters(params);
 end;
 
@@ -190,16 +192,17 @@ begin
   FigureList[High(FigureList)] := TRoundrect.Create(x, y);
   with (FigureList[High(FigureList)] as TRoundrect) do
   begin
-    Color := GlobalColor[0];
+    FillColor := GlobalColor[0];
     Width := round(GlobalWidth);
-    Rx := round(GlobalRadx);
-    Ry := round(GlobalRady);
+    RadX := round(GlobalRadx);
+    RadY := round(GlobalRady);
+    Params := self.Params;
   end;
 end;
 
 constructor THandTool.Create();
 begin
-  GlobalMode := Transform;
+  Cursor := crHandPoint;
   CreateParameters(params);
 end;
 
@@ -210,35 +213,39 @@ end;
 
 constructor TZoomTool.Create();
 begin
-  GlobalMode := Transform;
+  Cursor := crSizeWE;
   CreateParameters(params);
 end;
 
 procedure TZoomTool.MouseDown(x, y: integer);
 begin
   TZoom.Create(x, y);
+  CurrentTTool.Params := Params;
 end;
 
 constructor TZoomRectangleTool.Create();
 begin
-  GlobalMode := Transform;
+  Cursor := crDrag;
   CreateParameters(params);
 end;
 
 procedure TZoomRectangleTool.MouseDown(x, y: integer);
 begin
   TZoomRect.Create(x, y);
+  CurrentTTool.Params := Params;
 end;
 
 constructor TSelectTool.Create();
 begin
-  GlobalMode := Transform;
+  Cursor := crDefault;
   CreateParameters(params);
 end;
 
 procedure TSelectTool.MouseDown(x, y: integer);
 begin
   TSelect.Create(x, y);
+  CurrentTTool.Params := Params;
+  (CurrentTTool as TSelect).UpdateParameters(FigureList);
 end;
 
 end.

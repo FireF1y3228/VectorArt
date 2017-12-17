@@ -5,13 +5,12 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Controls, Graphics, Math, StdCtrls,
-  ExtCtrls, ComCtrls, CoordSystems, Buttons, Dialogs;
+  ExtCtrls, ComCtrls, CoordSystems, Buttons, Dialogs, Figures;
 
 type
   DoublePointer = ^double;
   IntegerPointer = ^integer;
   ColorPointer = ^TColor;
-  ParameterStringListType = array of string;
 
   BaseParameter = class
   protected
@@ -57,8 +56,11 @@ type
 
   ButtonParameter = class(BaseParameter)
   private
+    procedure SpeedButtonClick5(Sender: TObject);
     procedure SpeedButtonClick1(Sender: TObject);
     procedure SpeedButtonClick2(Sender: TObject);
+    procedure SpeedButtonClick3(Sender: TObject);
+    procedure SpeedButtonClick4(Sender: TObject);
   public
     constructor Create(aWidth, aHeight, aTop, aLeft: integer;
       aFlat: boolean; aCaption, aIconPath: string; aOnClick: integer);
@@ -66,13 +68,14 @@ type
 
 procedure CreateParameters(aParamList: ParameterStringListType);
 procedure UpdateScale;
+procedure UpdateFigureProperties;
 
 const
   SCALEPARAMDEFPOS = 1000;
   DEFAULTLEFT = 150;
   FormMainParams: array [0..4] of string =
     ('color2', 'color1', 'swapcolors', 'nocolor', 'scale');
-  DEFAULTPARAMETERSCOUNT = sizeof(formmainparams);
+  DEFAULT_PARAMETERS_COUNT = sizeof(formmainparams);
   DEFAULTCOLOR0 = ClBlack;
   DEFAULTCOLOR1 = ClWhite;
 
@@ -93,17 +96,17 @@ var
 begin
   if (length(BaseParameterList) <> 0) then
   begin
-    for i := DEFAULTPARAMETERSCOUNT to high(BaseParameterList) do
+    for i := DEFAULT_PARAMETERS_COUNT to high(BaseParameterList) do
     begin
       for j := 0 to high(BaseParameterList[i].ObjectList) do
         FreeAndNil(BaseParameterList[i].ObjectList[j]);
       FreeAndNil(BaseParameterList[i]);
     end;
-    SetLength(BaseParameterList, DEFAULTPARAMETERSCOUNT);
+    SetLength(BaseParameterList, DEFAULT_PARAMETERS_COUNT);
   end;
   for s in aParamList do
   begin
-    if (length(BaseParameterList) > DEFAULTPARAMETERSCOUNT) then
+    if (length(BaseParameterList) > DEFAULT_PARAMETERS_COUNT) then
       cleft := BaseParameterList[high(BaseParameterList)].left
     else
       cleft := DEFAULTLEFT;
@@ -138,8 +141,15 @@ begin
       'nocolor':
         BaseParameterList[h] :=
           ButtonParameter.Create(20, 20, 7, 80, True, '-', 'nocolor', 1);
-        //'delete':
-        //cleft := CreateButton(cleft, 'Delete');
+      'zup':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(27, 27, 3, cleft, True, '-', 'zup', 2);
+      'zdown':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(27, 27, 3, cleft, True, '-', 'zdown', 3);
+      'delete':
+        BaseParameterList[h] :=
+          ButtonParameter.Create(27, 27, 3, cleft, True, '-', 'delete', 4);
       else
         setlength(BaseParameterList, length(BaseParameterList) - 1);
     end;
@@ -172,12 +182,12 @@ begin
     Font.Size := 8;
     Top := 7;
     Tag := h;
-    Name := aName + 'Edit';
+    Name := aName + 'Editz';
     TabStop := False;
     TabOrder := 0;
     Width := 32;
     Height := 16;
-    Left := _cleft;
+    Left := _cleft + 5 * length(aCaption);
     OnChange := @EditFormChange;
   end;
 
@@ -189,7 +199,7 @@ begin
     Tag := h;
     Top := 7;
     (objectlist[0] as TEdit).Text := Def;
-    Left := _cleft + 32;
+    Left := _cleft + 32 + 5 * length(aCaption);
     Height := 18;
     Font.CharSet := 204;
     Min := 0;
@@ -206,7 +216,7 @@ begin
     Parent := FormInstrumentPanel^;
     Tag := h;
     Shape := BsBottomLine;
-    Left := _cleft;
+    Left := _cleft + 5 * length(aCaption);
     Height := 1;
     Name := aName + 'Bevel';
     Top := 26;
@@ -228,14 +238,14 @@ begin
     Top := 8;
     Name := aName + 'Label';
     Height := 16;
-    Left := _cleft - 5 * length(aCaption);
+    Left := _cleft;
   end;
   left += 128;
 end;
 
 procedure TextParameter.EditFormChange(Sender: TObject);
 var
-  txt: string;
+  txt, tempname: string;
   i, t: integer;
   _e: TEdit;
   tdouble: double;
@@ -260,6 +270,14 @@ begin
   tdouble := trunc(frac(tdouble) * 100) / 100 + trunc(tdouble);
   _e.Text := floattostr(tdouble);
   pointer^ := StrTofloat(txt) * multiplier;
+  tempname := _e.Name;
+  if tempname[length(tempname)] = 'z' then
+  begin
+    Delete(tempname, length(tempname), 1);
+    _e.Name := tempname;
+  end
+  else
+    UpdateFigureProperties;
   FormMainPaintBox^.invalidate;
 end;
 
@@ -315,8 +333,7 @@ begin
     Transparent := aTransparent;
     OnColorChanged := @OnChangedColor;
   end;
-
-  Left := aLeft;
+  Left := aLeft + aWidth + 15;
   Pointer := aPointer;
 end;
 
@@ -341,17 +358,33 @@ begin
     case aOnClick of
       0: OnClick := @SpeedButtonClick1;
       1: OnClick := @SpeedButtonClick2;
+      2: OnClick := @SpeedButtonClick3;
+      3: OnClick := @SpeedButtonClick4;
+      4: OnClick := @SpeedButtonClick5;
     end;
   end;
   Picture := TPicture.Create;
   Picture.LoadFromFile(getcurrentdir + '\Images\' + aIconPath + '.png');
   (ObjectList[high(ObjectList)] as TSpeedButton).Glyph := Picture.Bitmap;
-  Left := aLeft;
+  Left := aLeft + aWidth + 15;
 end;
 
 procedure ColorButtonParameter.OnChangedColor(Sender: TObject);
+var
+  tempColor: TColor;
+  f: TFigure;
 begin
+  tempColor := GlobalColor[0];
   pointer^ := (Sender as TColorButton).ButtonColor;
+  if (tempColor <> GlobalColor[0]) then
+  begin
+    for f in figurelist do
+    begin
+      if (f.selected) then
+        f.color := GlobalColor[0];
+    end;
+  end;
+  FormMainPaintBox^.Invalidate;
 end;
 
 procedure ButtonParameter.SpeedButtonClick1(Sender: TObject);
@@ -386,6 +419,85 @@ end;
 procedure ButtonParameter.SpeedButtonClick2(Sender: TObject);
 begin
   globalcolor[0] := clNone;
+end;
+
+procedure ButtonParameter.SpeedButtonClick3(Sender: TObject);
+var
+  i: integer;
+  TempFigure: TFigure;
+begin
+  for i := (high(FigureList) - 1) downto 0 do
+  begin
+    if (FigureList[i].selected) and (not FigureList[i + 1].selected) then
+    begin
+      TempFigure := FigureList[i + 1];
+      FigureList[i + 1] := FigureList[i];
+      FigureList[i] := TempFigure;
+    end;
+  end;
+  FormMainPaintBox^.Invalidate;
+end;
+
+procedure ButtonParameter.SpeedButtonClick4(Sender: TObject);
+var
+  i: integer;
+  TempFigure: TFigure;
+begin
+  for i := 1 to high(FigureList) do
+  begin
+    if (FigureList[i].selected) and (not FigureList[i - 1].selected) then
+    begin
+      TempFigure := FigureList[i - 1];
+      FigureList[i - 1] := FigureList[i];
+      FigureList[i] := TempFigure;
+    end;
+  end;
+  FormMainPaintBox^.Invalidate;
+end;
+
+procedure ButtonParameter.SpeedButtonClick5(Sender: TObject);
+var
+  i: integer;
+  TempFigureList: array of TFigure;
+begin
+  for i := 0 to high(FigureList) do
+  begin
+    if (not FigureList[i].selected) then
+    begin
+      setlength(TempFigureList, length(TempFigureList) + 1);
+      TempFigureList[high(TempFigureList)] := FigureList[i];
+    end
+    else
+      FreeAndNil(FigureList[i]);
+  end;
+  FigureList := TempFigureList;
+  FormMainPaintBox^.Invalidate;
+end;
+
+
+procedure UpdateFigureProperties();
+var
+  f: TFigure;
+  j: integer;
+  s: string;
+begin
+  for f in FigureList do
+  begin
+    if f.Selected then
+    begin
+      for s in f.Params do
+      begin
+        case s of
+          'width':
+            f.Width := round(GlobalWidth);
+          'radx':
+            f.RadX := round(GlobalRadX);
+          'rady':
+            f.RadY := round(GlobalRadY);
+        end;
+      end;
+    end;
+  end;
 end;
 
 end.

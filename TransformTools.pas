@@ -15,11 +15,13 @@ type
   var
     points: array of TPointDouble;
     selected: boolean;
+    Params: ParameterStringListType;
 
     procedure Draw(acanvas: TCanvas); virtual; abstract;
     procedure MouseMove(x, y: integer); virtual; abstract;
     procedure MouseUp(x, y: integer); virtual;
     constructor Create(x, y: integer); virtual;
+    function GetParams: ParameterStringListType;
   end;
 
   THand = class(TTransformTool)
@@ -49,12 +51,16 @@ type
     Mode: TransformModeType;
     sPoints, sFigures: array of integer;
     deltax, deltay: double;
-    PointModified: boolean;
+    isPointModified, isFigureModified, canMoveFigures: boolean;
 
     function SelectedPointsCount(): integer;
+    function point_in_figure(ax, ay: integer; aFigure: TFigure): boolean;
     function point_in_figure(ax, ay: double; aFigure: TFigure): boolean;
+    procedure RemoveAllPointSelection(afigurelist: TFigureList);
     procedure RemoveAllSelection(afigurelist: TFigureList);
+    procedure RemovePointSelection(aFigure: TFigure);
   public
+    procedure UpdateParameters(aFigureList: TFigureList);
     procedure Draw(acanvas: TCanvas); override;
     procedure MouseMove(x, y: integer); override;
     procedure MouseUp(x, y: integer); override;
@@ -80,7 +86,13 @@ begin
   ScreenCoord.y := y;
   WorldCoord.x := s2w(x, 0).x;
   WorldCoord.y := s2w(0, y).y;
-  currentttool := self;
+  CurrentTTool := self;
+  GlobalMode := TransformMode;
+end;
+
+function TTransformTool.GetParams: ParameterStringListType;
+begin
+  Result := Params;
 end;
 
 procedure TTransformTool.MouseUp(x, y: integer);
@@ -178,7 +190,9 @@ var
   j, l: integer;
   wx, wy: double;
 begin
-  PointModified := False;
+  inherited Create(x, y);
+  canMoveFigures := False;
+  isPointModified := False;
   wx := s2w(x, 0).x;
   wy := s2w(0, y).y;
   mode := select;
@@ -194,29 +208,44 @@ begin
           if ((not ShiftButtonPressed) and ((SelectedPointsCount <= 1) or
             (not i.sPoints[j]))) or (CtrlButtonPressed) then
           begin
-            RemoveAllSelection(figurelist);
+            RemoveAllPointSelection(figurelist);
             i.sPoints[j] := True;
             setlength(i.sPointList, 1);
             i.sPointList[0] := j;
-            PointModified := True;
+            isPointModified := True;
             break;
           end
           else
           begin
             if (not i.sPoints[j]) then
-              PointModified := True;
-            i.sPoints[j] := True;
-            setlength(i.sPointList, Length(i.sPointList) + 1);
-            i.sPointList[high(i.sPointList)] := j;
+            begin
+              isPointModified := True;
+              i.sPoints[j] := True;
+              setlength(i.sPointList, Length(i.sPointList) + 1);
+              i.sPointList[high(i.sPointList)] := j;
+            end;
           end;
         end;
-    end
-    else
-    begin
-
     end;
   end;
-  inherited Create(x, y);
+  for i in FigureList do
+  begin
+    if (not isPointModified) then
+    begin
+      if (Point_in_Figure(x, y, i)) then
+      begin
+        canMoveFigures := True;
+        if (not i.Selected) then
+        begin
+          if (not ShiftButtonPressed) then
+            RemoveAllSelection(FigureList);
+          i.Selected := True;
+          isFigureModified := True;
+        end;
+      end;
+    end;
+  end;
+
   deltax := points[0].x;
   deltay := points[0].y;
 end;
@@ -232,26 +261,35 @@ begin
     for i in figurelist do
     begin
       case i.ClassName of
-        'TLine', 'TRectangle', 'TRoundrect', 'TEllipse', 'TPen':
+        'TLine', 'TRectangle', 'TRoundrect', 'TEllipse', 'TPencil':
         begin
-          for j := 0 to high(i.spoints) do
+          for j := 0 to high(i.sPointList) do
           begin
-            if i.spoints[j] then
-            begin
-              i.points[j].x += -deltax + points[1].x;
-              i.points[j].y += -deltay + points[1].y;
-            end;
+            i.points[i.sPointList[j]].x += -deltax + points[1].x;
+            i.points[i.sPointList[j]].y += -deltay + points[1].y;
           end;
         end;
       end;
     end;
-    deltax := points[1].x;
-    deltay := points[1].y;
   end;
   if (mode = select) then
   begin
-
+    if (canMoveFigures) then
+      for i in FigureList do
+      begin
+        if (i.selected) then
+        begin
+          for j := 0 to high(i.Points) do
+          begin
+            i.points[j].x += -deltax + points[1].x;
+            i.points[j].y += -deltay + points[1].y;
+          end;
+          isFigureModified := True;
+        end;
+      end;
   end;
+  deltax := points[1].x;
+  deltay := points[1].y;
 end;
 
 procedure TSelect.Draw(acanvas: tcanvas);
@@ -259,7 +297,7 @@ var
   w: integer;
   cl: tcolor;
 begin
-  if (mode = select) then
+  if (mode = select) and (not isFigureModified) then
   begin
     SetScreenCoords(points);
     w := acanvas.pen.Width;
@@ -293,13 +331,7 @@ begin
   wx := s2w(x, 0).x;
   wy := s2w(0, y).y;
   mindistance := 32200;
-  if (mode = select) then
-    for i in figurelist do
-    begin
-      if (point_in_figure(wx,wy,i)) then
-         i.selected:=not i.selected;
-    end;
-  if (mode = editpoints) then     //and (not (PointModified))
+  if (mode = editpoints) then     //and (not (isPointModified))
   begin
     if (points[0].x = points[1].x) and (points[0].y = points[1].y) then
     begin
@@ -312,16 +344,10 @@ begin
               i.points[j].y - 15, i.points[j].x + 15, i.points[j].y + 15) then
             begin
               if (i.sPoints[j] = True) and (ShiftButtonPressed) and
-                (not (PointModified)) then
+                (not (isPointModified)) then
               begin
-                ArrayElementDelete(i.sPointList, j);
+                i.sPointList := ArrayElementDelete(i.sPointList, j);
                 i.sPoints[j] := False;
-              end
-              else
-              begin
-                i.sPoints[j] := True;
-                setlength(i.sPointList, Length(i.sPointList) + 1);
-                i.sPointList[high(i.sPointList)] := j;
               end;
               break;
             end;
@@ -329,15 +355,69 @@ begin
       end;
     end;
   end;
+  if (mode = select) then
+  begin
+    for i in figurelist do
+    begin
+      if (point_in_figure(wx, wy, i)) and (not isFigureModified) then
+      begin
+        if (CtrlButtonPressed) then
+        begin
+          RemoveAllSelection(FigureList);
+          i.Selected := True;
+          UpdateParameters(FigureList);
+        end
+        else
+        if (i.selected) and (ShiftButtonPressed) then
+        begin
+          i.selected := False;
+          UpdateParameters(FigureList);
+        end;
+      end;
+    end;
+  end;
 end;
 
-procedure TSelect.RemoveAllSelection(afigurelist: TFigureList);
+procedure TSelect.RemoveAllPointSelection(aFigureList: TFigureList);
 var
   f: TFigure;
   l: integer;
 begin
   for f in afigurelist do
   begin
+    if (length(f.sPointList) > 0) then
+    begin
+      for l := 0 to high(f.sPointList) do
+      begin
+        f.sPoints[f.sPointList[l]] := False;
+      end;
+      Setlength(f.sPointList, 0);
+    end;
+  end;
+end;
+
+procedure TSelect.RemovePointSelection(aFigure: TFigure);
+var
+  l: integer;
+begin
+  if (length(aFigure.sPointList) > 0) then
+  begin
+    for l := 0 to high(aFigure.sPointList) do
+    begin
+      aFigure.sPoints[aFigure.sPointList[l]] := False;
+    end;
+    Setlength(aFigure.sPointList, 0);
+  end;
+end;
+
+procedure TSelect.RemoveAllSelection(aFigureList: TFigureList);
+var
+  f: TFigure;
+  l: integer;
+begin
+  for f in afigurelist do
+  begin
+    f.Selected := False;
     if (length(f.sPointList) > 0) then
     begin
       for l := 0 to high(f.sPointList) do
@@ -360,17 +440,66 @@ begin
   end;
 end;
 
+function TSelect.point_in_figure(ax, ay: integer; aFigure: TFigure): boolean;
+var
+  wax, way: double;
+begin
+  wax := s2w(ax, 0).x;
+  way := s2w(0, ay).y;
+  Result := point_in_figure(wax, way, aFigure);
+end;
+
 function TSelect.point_in_figure(ax, ay: double; aFigure: TFigure): boolean;
 begin
   case aFigure.ClassName of
     'TLine':
-      Result := (point_in_line(ax, ay, aFigure.points[0].x, aFigure.points[0].y,
-        aFigure.points[1].x, aFigure.points[1].y, aFigure.Width));
+      Result := (point_in_line(ax, ay, aFigure.points[0].x,
+        aFigure.points[0].y, aFigure.points[1].x, aFigure.points[1].y, aFigure.Width));
 
     'TRectangle':
       Result := (point_in_rectangle(ax, ay, aFigure.points[0].x,
         aFigure.points[0].y, aFigure.points[1].x, aFigure.points[1].y))
   end;
+end;
+
+procedure TSelect.UpdateParameters(aFigureList: TFigureList);
+var
+  f: TFigure;
+  j: integer;
+  s: string;
+  Result: ParameterStringListType;
+begin
+  setlength(Result, Length(CurrentTTool.Params));
+  for j := 0 to high(CurrentTTool.Params) do
+    Result[j] := CurrentTTool.Params[j];
+  for f in aFigureList do
+  begin
+    if f.Selected then
+    begin
+      for s in f.Params do
+      begin
+        if (length(Result) > 0) then
+        begin
+          for j := 0 to high(Result) do
+          begin
+            if (s = Result[j]) then
+              break;
+            if (j = high(Result)) then
+            begin
+              setlength(Result, Length(Result) + 1);
+              Result[high(Result)] := s;
+            end;
+          end;
+        end
+        else
+        begin
+          setlength(Result, Length(Result) + 1);
+          Result[high(Result)] := s;
+        end;
+      end;
+    end;
+  end;
+  CreateParameters(Result);
 end;
 
 //SELECT end

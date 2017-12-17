@@ -7,20 +7,26 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Buttons,
   ExtCtrls, Spin, StdCtrls, EditBtn, ComCtrls, Menus, maskedit, ActnList,
-  Figures, Math, Types, CoordSystems, Tools, TransformTools, Parameters, LCLType;
+  Figures, Math, Types, CoordSystems, Tools, TransformTools, Parameters,
+  LCLType, SaveLoad;
 
 type
 
   { TFormMain }
 
   TFormMain = class(TForm)
-    Button1: TButton;
     HorScrollBar: TScrollBar;
     MenuEdit: TMenuItem;
+    MenuClear: TMenuItem;
+    MenuOpen: TMenuItem;
+    MenuSave: TMenuItem;
+    MenuSaveAs: TMenuItem;
     MenuReset: TMenuItem;
     MenuResetScale: TMenuItem;
     MenuResetOffset: TMenuItem;
     MenuScaleToFit: TMenuItem;
+    OpenDialog: TOpenDialog;
+    SaveDialog: TSaveDialog;
     VerScrollBar: TScrollBar;
     StaticText1: TStaticText;
     StaticText2: TStaticText;
@@ -42,13 +48,16 @@ type
     PanelInstrument: TPanel;
     PaintBox: TPaintBox;
     PanelMain: TPanel;
-    procedure ColorButtonColorChanged(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure FormKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure FormResize(Sender: TObject);
     procedure HandPopupDefPosClick(Sender: TObject);
     procedure HorScrollBarChange(Sender: TObject);
+    procedure MenuClearClick(Sender: TObject);
+    procedure MenuOpenClick(Sender: TObject);
     procedure MenuResetScaleClick(Sender: TObject);
+    procedure MenuSaveAsClick(Sender: TObject);
+    procedure MenuSaveClick(Sender: TObject);
     procedure MenuScaleToFitClick(Sender: TObject);
     procedure PaintBoxMouseWheelDown(Sender: TObject; Shift: TShiftState;
       MousePos: TPoint; var Handled: boolean);
@@ -66,9 +75,7 @@ type
     procedure SpeedButton1Click(Sender: TObject);
     procedure ToolButtonMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
-    procedure RXEditEditingDone(Sender: TObject);
-    procedure RYEditEditingDone(Sender: TObject);
-    procedure ReselectButton(button: TObject);
+    procedure ReselectButton(button: TObject; isTemporary: boolean);
     procedure VerScrollBarChange(Sender: TObject);
     procedure ZoomPopupDefPosClick(Sender: TObject);
 
@@ -82,12 +89,14 @@ var
   FormMain: TFormMain;
   FigureType: integer;
   Drawing, Transformed: boolean;
-  FigureButtonTag, rx, ry, lastheight, lastwidth: integer;
-  LastChosenButton: TSpeedButton;
-  figuretemp: TFigure;
+  SelectedButtonTag, LastButtonTag, rx, ry, lastheight, lastwidth: integer;
+  LastSelectedButton: TSpeedButton;
   ttemp: TTransformTool;
   ToolButtons: array of TSpeedButton;
   SelectedTool: TTool;
+
+const
+  DEFAULT_EXTENCION = 'vproj';
 
 implementation
 
@@ -102,9 +111,11 @@ var
   LoadedPicture: TPicture;
   s: string;
 begin
+  CurrentFileName := DEFAULT_FILE_NAME;
+  saveDialog.DefaultExt := DEFAULT_EXTENCION;
   FormInstrumentPanel := @panelinstrument;
   FormMainPaintBox := @PaintBox;
-  LastChosenButton := nil;
+  LastSelectedButton := nil;
   GlobalOffset := PointDouble(0, 0);
   GlobalScale := 1;
   CreateParameters(FormMainParams);
@@ -137,9 +148,10 @@ begin
   end;
   globalwidth := 1;
   globalcolor[0] := clBlack;
-  FigureButtonTag := 0;
-  LastChosenButton := ToolButtons[0];
-  ReselectButton(ToolButtons[0]);
+  SelectedButtonTag := 0;
+  LastButtonTag := -1;
+  LastSelectedButton := ToolButtons[0];
+  ReselectButton(ToolButtons[0], False);
   lastheight := PaintBox.Width;
   pmin.x := 0;
   pmin.y := 0;
@@ -154,20 +166,22 @@ begin
   FormMain.DoubleBuffered := True;
 end;
 
-procedure TFormMain.ReselectButton(button: TObject);
-var
-  i: TObject;
-  a: TNotifyEvent;
+procedure TFormMain.ReselectButton(button: TObject; isTemporary: boolean);
 begin
-  FigureButtonTag := (button as TSpeedButton).Tag;
+  //if (SelectedButtonTag <> (button as TSpeedButton).Tag) then
+  //begin
+  if (not isTemporary) then
+    LastButtonTag := SelectedButtonTag;
+  SelectedButtonTag := (button as TSpeedButton).Tag;
   SelectedTool.Free;
-  SelectedTool := TToolClassList[FigureButtonTag].Create;
-  LastChosenButton.Enabled := True;
-  LastChosenButton.Margin := 0;
-  LastChosenButton := (button as TSpeedButton);
+  SelectedTool := TToolClassList[SelectedButtonTag].Create;
+  LastSelectedButton.Enabled := True;
+  LastSelectedButton.Margin := 0;
+  LastSelectedButton := (button as TSpeedButton);
   (button as TSpeedButton).Down := True;
   (button as TSpeedButton).Margin := 0;
   (button as TSpeedButton).Enabled := False;
+  //end;
 end;
 
 procedure TFormMain.VerScrollBarChange(Sender: TObject);
@@ -181,35 +195,30 @@ begin
   GlobalScale := 1;
 end;
 
-procedure TFormMain.RXEditEditingDone(Sender: TObject);
-begin
-  rx := StrToInt(Name);
-end;
-
-procedure TFormMain.RYEditEditingDone(Sender: TObject);
-begin
-  ry := StrToInt(Name);
-end;
-
-procedure TFormMain.ColorButtonColorChanged(Sender: TObject);
-begin
-  //globalcolor[0] := ColorButton.ButtonColor;
-end;
-
 procedure TFormMain.FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
   case key of
     vk_shift: ShiftButtonPressed := True;
     vk_control: CtrlButtonPressed := True;
+    vk_q: ReselectButton(toolbuttons[0], False);
+    vk_w: ReselectButton(toolbuttons[1], False);
+    vk_e: ReselectButton(toolbuttons[2], False);
+    vk_r: ReselectButton(toolbuttons[3], False);
+    vk_t: ReselectButton(toolbuttons[4], False);
+    vk_a: ReselectButton(toolbuttons[5], False);
+    vk_s: ReselectButton(toolbuttons[6], False);
+    vk_d: ReselectButton(toolbuttons[7], False);
+    vk_f: ReselectButton(toolbuttons[8], False);
+    vk_space: ReselectButton(toolbuttons[5], False);
   end;
 end;
 
 procedure TFormMain.FormKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
-
 begin
   case key of
     vk_shift: ShiftButtonPressed := False;
     vk_control: CtrlButtonPressed := False;
+    vk_space: ReselectButton(toolbuttons[LastButtonTag], False);
   end;
 end;
 
@@ -232,9 +241,46 @@ begin
   paintbox.invalidate;
 end;
 
+procedure TFormMain.MenuClearClick(Sender: TObject);
+var
+  i: integer;
+begin
+  for i := 0 to high(FigureList) do
+    FreeAndNil(FigureList[i]);
+  setlength(FigureList, 0);
+  PaintBox.Invalidate;
+  if CurrentTTool.ClassName = 'TSelect' then
+    (CurrentTTool as TSelect).UpdateParameters(FigureList);
+end;
+
+procedure TFormMain.MenuOpenClick(Sender: TObject);
+begin
+  if (OpenDialog.Execute) then
+    LoadProject(OpenDialog.FileName);
+  PaintBox.Invalidate;
+end;
+
 procedure TFormMain.MenuResetScaleClick(Sender: TObject);
 begin
   globalscale := 1;
+end;
+
+procedure TFormMain.MenuSaveAsClick(Sender: TObject);
+begin
+  if (SaveDialog.Execute) then
+  begin
+    SaveProject(SaveDialog.FileName);
+  end;
+end;
+
+procedure TFormMain.MenuSaveClick(Sender: TObject);
+begin
+  if CurrentFileName = DEFAULT_FILE_NAME then
+  begin
+    MenuSaveAsClick(Sender);
+    exit;
+  end;
+  Application.MessageBox('Successfully saved!', 'Info');
 end;
 
 procedure TFormMain.MenuScaleToFitClick(Sender: TObject);
@@ -257,10 +303,8 @@ var
   p: array[0..1] of tpointdouble;
 begin
   GlobalScale := min(MAXSCALE, max(MINSCALE, GlobalScale + 0.05));
-  //ScaleSpinEdit.Value := GlobalScale * 100;
   paintbox.invalidate;
 end;
-
 
 procedure TFormMain.MenuFileExitClick(Sender: TObject);
 begin
@@ -269,7 +313,7 @@ end;
 
 procedure TFormMain.MenuHelpAboutClick(Sender: TObject);
 begin
-  ShowMessage('Vector Graphics Editor v. 0.004 by Lesogorov Mihail (b8103a)');
+  ShowMessage('VectorArt v. 0.004 - Vector Graphics Editor by Lesogorov Mihail (b8103a)');
 end;
 
 procedure TFormMain.PaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
@@ -278,6 +322,7 @@ begin
   if (Button = mbLeft) then
   begin
     SelectedTool.MouseDown(x, y);
+    PaintBox.Cursor := SelectedTool.Cursor;
     PaintBox.Invalidate;
     drawing := True;
   end;
@@ -286,29 +331,27 @@ end;
 procedure TFormMain.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: integer);
 begin
-  if (Drawing = True) then
+  if (Drawing = True) and (length(FigureList) > 0) then
   begin
-    case globalmode of
-      Draw: FigureList[high(FigureList)].MouseMove(x, y);
-      Transform: CurrentTTool.MouseMove(x, y);
+    case GlobalMode of
+      DrawMode: FigureList[high(FigureList)].MouseMove(x, y);
+      TransformMode: CurrentTTool.MouseMove(x, y);
     end;
     ChangeDrawEdges(x, y);
     HorScrollBar.min := round(pmin.x) - Width div 2;
     HorScrollBar.max := round(pmax.x) - Width div 2;
     VerScrollBar.min := round(pmin.y) - Height div 2;
     VerScrollBar.max := round(pmax.y) - Height div 2;
-    //ScaleSpinEdit.Value := GlobalScale * 100;
     PaintBox.Invalidate;
   end;
-  {StaticText1.Caption := 'tag: ' + floattostr(LastChosenButton.Tag);
+  {StaticText1.Caption := 'tag: ' + floattostr(LastSelectedButton.Tag);
   StaticText2.Caption := 'mx: ' + IntToStr(x);
   StaticText3.Caption := 'my: ' + IntToStr(y);}
-  StaticText4.Caption := 'offx: ' + floattostr(GlobalOffset.x);
-  StaticText5.Caption := 'offy: ' + floattostr(GlobalOffset.y);
+  StaticText4.Caption := 'last tag: ' + floattostr(LastButtonTag);
+  StaticText5.Caption := 'curr tag: ' + floattostr(SelectedButtonTag);
   StaticText6.Caption := 'mdis: ' + floattostr(mindistance);
   StaticText7.Caption := 'fllength: ' + IntToStr(length(figurelist));
-  StaticText8.Caption := 'tag: ' + booltostr(ShiftButtonPressed);
-  //scaleSpinEdit.Value := GlobalScale * 100;
+  StaticText8.Caption := 'pointscount: ' + IntToStr(length(figurelist[0].points));
 end;
 
 procedure TFormMain.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
@@ -316,19 +359,19 @@ procedure TFormMain.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
 var
   i: TFigure;
 begin
-  if (Button = mbLeft) then
+  if (Button = mbLeft) and (length(FigureList) > 0) then
   begin
     case globalmode of
-      Draw: FigureList[high(FigureList)].MouseUp(x, y);
-      Transform: CurrentTTool.MouseUp(x, y);
+      DrawMode:
+        FigureList[high(FigureList)].MouseUp(x, y);
+      TransformMode: CurrentTTool.MouseUp(x, y);
     end;
     PaintBox.Invalidate;
     Drawing := False;
     Transformed := False;
   end;
-  paintbox.cursor := crDefault;
+  PaintBox.Cursor := crDefault;
   PaintBox.Invalidate;
-  //scaleSpinEdit.Value := GlobalScale * 100;
 end;
 
 procedure TFormMain.PaintBoxPaint(Sender: TObject);
@@ -346,9 +389,8 @@ begin
       setlength(buffer, length(buffer) + 1);
       buffer[high(buffer)] := i;
     end;
-
-    PaintBox.Canvas.Pen.Color := i.color;
-    PaintBox.Canvas.Brush.Color := i.color;
+    PaintBox.Canvas.Pen.Color := i.OutlineColor;
+    PaintBox.Canvas.Brush.Color := i.FillColor;
     PaintBox.Canvas.Pen.Width := max(1, round(i.Width * GlobalScale));
     i.Draw(PaintBox.Canvas);
   end;
@@ -357,7 +399,7 @@ begin
     i.DrawOutlineRectangle(i.points, PaintBox.Canvas);
     i.DrawPoints(i.points, PaintBox.Canvas);
   end;
-  if (GlobalMode = transform) and (drawing) then
+  if (GlobalMode = TransformMode) and (drawing) then
     CurrentTTool.Draw(Paintbox.Canvas);
 end;
 
@@ -373,7 +415,7 @@ end;
 procedure TFormMain.ToolButtonMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 begin
-  ReselectButton(Sender as TSpeedButton);
+  ReselectButton(Sender as TSpeedButton, False);
 end;
 
 end.

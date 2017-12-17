@@ -1,11 +1,11 @@
 object FormMain: TFormMain
-  Left = 355
-  Height = 845
-  Top = 85
-  Width = 1056
+  Left = 506
+  Height = 785
+  Top = 173
+  Width = 1124
   Caption = 'Untitled'
-  ClientHeight = 825
-  ClientWidth = 1056
+  ClientHeight = 765
+  ClientWidth = 1124
   Color = clWindowFrame
   Icon.Data = {
     A0F1010000000100010000000000010020008AF101001600000089504E470D0A
@@ -3998,9 +3998,10 @@ object FormMain: TFormMain
   OnKeyUp = FormKeyUp
   OnResize = FormResize
   LCLVersion = '1.8.0.6'
+  Visible = True
   object VerScrollBar: TScrollBar
-    Left = 1040
-    Height = 769
+    Left = 1108
+    Height = 709
     Top = 36
     Width = 16
     Align = alRight
@@ -4012,8 +4013,8 @@ object FormMain: TFormMain
   object HorScrollBar: TScrollBar
     Left = 0
     Height = 20
-    Top = 805
-    Width = 1056
+    Top = 745
+    Width = 1124
     Align = alBottom
     PageSize = 0
     TabOrder = 12
@@ -4021,7 +4022,7 @@ object FormMain: TFormMain
   end
   object PanelOutline1: TPanel
     Left = 48
-    Height = 769
+    Height = 709
     Top = 36
     Width = 4
     Align = alLeft
@@ -4032,9 +4033,9 @@ object FormMain: TFormMain
   end
   object PaintBox: TPaintBox
     Left = 52
-    Height = 769
+    Height = 709
     Top = 36
-    Width = 988
+    Width = 1056
     Align = alClient
     OnMouseDown = PaintBoxMouseDown
     OnMouseMove = PaintBoxMouseMove
@@ -4045,7 +4046,7 @@ object FormMain: TFormMain
   end
   object PanelMain: TPanel
     Left = 0
-    Height = 769
+    Height = 709
     Top = 36
     Width = 48
     Align = alLeft
@@ -4058,30 +4059,20 @@ object FormMain: TFormMain
     Left = 0
     Height = 32
     Top = 0
-    Width = 1056
+    Width = 1124
     Align = alTop
     BevelOuter = bvNone
-    ClientHeight = 32
-    ClientWidth = 1056
     Color = 5395026
     Font.CharSet = RUSSIAN_CHARSET
     ParentColor = False
     ParentFont = False
     TabOrder = 1
-    object Button1: TButton
-      Left = 240
-      Height = 27
-      Top = 3
-      Width = 27
-      Caption = 'Button1'
-      TabOrder = 0
-    end
   end
   object PanelOutline2: TPanel
     Left = 0
     Height = 4
     Top = 32
-    Width = 1056
+    Width = 1124
     Align = alTop
     BevelOuter = bvNone
     Color = 4144959
@@ -4156,10 +4147,24 @@ object FormMain: TFormMain
     TabOrder = 11
   end
   object MainMenu: TMainMenu
-    left = 1080
-    top = 8
+    left = 1048
+    top = 96
     object MenuFile: TMenuItem
       Caption = 'File'
+      object MenuOpen: TMenuItem
+        Caption = 'Open'
+        OnClick = MenuOpenClick
+      end
+      object MenuSave: TMenuItem
+        Caption = 'Save'
+        ShortCut = 16467
+        OnClick = MenuSaveClick
+      end
+      object MenuSaveAs: TMenuItem
+        Caption = 'Save As'
+        ShortCutKey2 = 24659
+        OnClick = MenuSaveAsClick
+      end
       object MenuFileExit: TMenuItem
         Caption = 'Exit'
         ShortCut = 32883
@@ -4182,6 +4187,11 @@ object FormMain: TFormMain
         Caption = 'Scale to Fit'
         OnClick = MenuScaleToFitClick
       end
+      object MenuClear: TMenuItem
+        Caption = 'Clear'
+        ShortCut = 16430
+        OnClick = MenuClearClick
+      end
     end
     object MenuWindow: TMenuItem
       Caption = 'Window'
@@ -4199,5 +4209,13 @@ object FormMain: TFormMain
         OnClick = MenuHelpAboutClick
       end
     end
+  end
+  object SaveDialog: TSaveDialog
+    left = 1048
+    top = 40
+  end
+  object OpenDialog: TOpenDialog
+    left = 1048
+    top = 152
   end
 end

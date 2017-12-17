@@ -8,6 +8,8 @@ uses
   Classes, SysUtils, Math, Controls, Dialogs;
 
 type
+  ParameterStringListType = array of string;
+
   TPointDouble = record
     x, y: real;
   end;
@@ -173,6 +175,7 @@ var
   _i: integer;
   found: boolean;
 begin
+  found := False;
   for _i := 0 to (high(a) - 1) do
   begin
     if (a[_i] = e) then

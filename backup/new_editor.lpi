@@ -30,7 +30,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="new_editor.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -64,6 +64,11 @@
         <Filename Value="Parameters.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="saveload.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SaveLoad"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

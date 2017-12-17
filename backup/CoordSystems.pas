@@ -8,6 +8,7 @@ uses
   Classes, SysUtils, Math, Controls, Dialogs;
 
 type
+    ParameterStringListType = array of string;
   TPointDouble = record
     x, y: real;
   end;
@@ -121,7 +122,7 @@ begin
   a2 := (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1);
   ap := min(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
   bp := max(point_distance(px, py, x1, y1), point_distance(px, py, x2, y2));
-  d1 := sqrt(abs((a2 * a2) / ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))));
+  d1 := sqrt(abs((a2 * a2) / max(((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)), 1)));
   t := (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
   if (t < 0) then
     d2 := ap
@@ -173,6 +174,7 @@ var
   _i: integer;
   found: boolean;
 begin
+  found := False;
   for _i := 0 to (high(a) - 1) do
   begin
     if (a[_i] = e) then
